@@ -1,0 +1,48 @@
+# MLP for Pima Indians Dataset with grid search via sklearn
+from pandas import read_csv
+from keras.models import Sequential
+from keras.layers import Dense
+#from keras.wrappers.scikit_learn import KerasClassifier
+from keras.wrappers.scikit_learn import KerasClassifier
+from sklearn.model_selection import GridSearchCV
+import numpy as np
+
+# Function to create model, required for KerasClassifier
+def create_model(optimizer= 'rmsprop', kernel_initializer='glorot_uniform'):
+    # create model
+    model = Sequential()
+    model.add(Dense(12, input_dim=8, kernel_initializer = kernel_initializer, activation= 'relu'))
+    model.add(Dense(8, kernel_initializer = kernel_initializer, activation= 'relu'))
+    model.add(Dense(1, kernel_initializer = kernel_initializer, activation= 'sigmoid'))
+    # Compile model
+    model.compile(loss= 'binary_crossentropy', optimizer= optimizer , metrics=['accuracy'])
+    return model
+
+#load pima indians dataset
+filename = 'D:\\Dataset\pima-indians-diabetes.csv'
+names = ['preg', 'plas', 'pres', 'skin', 'test', 'mass', 'pedi', 'age', 'class']
+dataframe = read_csv(filename, names=names)
+array = dataframe.values
+X = array[:,0:8]
+Y = array[:,8]
+
+# create model
+model = KerasClassifier(build_fn=create_model, epochs=150, batch_size=10, verbose=0)
+
+# grid search epochs, batch size and optimizer
+optimizers = ['rmsprop', 'adam']
+kernel_initializer = ['glorot_uniform','normal','uniform']
+epochs = np.array([50, 100, 150])
+batches = np.array([5, 10, 20])
+
+
+param_grid = dict(optimizer=optimizers, epochs=epochs, batch_size=batches, kernel_initializer=kernel_initializer)
+grid = GridSearchCV(estimator=model, param_grid=param_grid)
+grid_result = grid.fit(X, Y)
+
+
+# summarize results
+print("Best: %f using %s" % (grid_result.best_score_, grid_result.best_params_))
+for i in ['mean_test_score', 'std_test_score','params']:
+    print(i,": ",grid.cv_results_[i]) #the scores for all the scorers are available in the cv_results_ dict at the keys
+   # print("%f (%f) with: %r" % (scores.mean(), scores.std(), params))
